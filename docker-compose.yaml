@@ -1,0 +1,41 @@
+version: '3'
+services:
+  db: 
+    image: mysql
+    command: 
+      - --innodb-use-native-aio=0
+    container_name: db
+    restart: always
+    tty: true
+    volumes: 
+      - ./mysql:/var/lib/mysql 
+    
+    ports:  
+      - 3306:3306 
+    environment:  
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root
+      
+    networks: 
+      - node-network
+
+  app:
+    build: 
+      context: node
+    volumes:
+      - ./node:/usr/src/app
+    ports: 
+      - 3000:3000
+    container_name: app
+    restart: always
+    tty: true
+    
+    networks: 
+      - node-network
+
+    depends_on: 
+      - db      
+
+networks:
+  node-network:
+    driver: bridge
