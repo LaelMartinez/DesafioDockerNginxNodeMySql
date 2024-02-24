@@ -1,41 +1,91 @@
-const express = require("express");
-const app = express();
-const port = 3000;
+const express = require('express')
+const app = express()
 
-const mysql = require('mysql');
+const port = 3000
 
-const config = mysql.createConnection({
-    host: "db",
-    user: "root",
-    password: "root",
-    database: "nodedb",
-    port: 3306,
-});
+const config = {
+  host: 'database',
+  user: 'root',
+  password: 'root',
+  database: 'database'
+}
 
+const mysql = require('mysql')
 const connection = mysql.createConnection(config)
 
-connection.connect((error) => {
-    if(error) {
-        console.error('Error connecting: ' + error.stack);
-        return;
-    }
-    console.log('Connected as id ' + connection.threadId);
-});
 
+const table = sqlTable(connection)
 
-const createTable = `CREATE TABLE IF NOT EXISTS people(id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, PRIMARY KEY(id))`;
-connection.query(createTable);
-
-const sql = `INSERT INTO people(name) VALUES ("Lael")`;
-connection.query(sql);
-connection.end();
-
-
-app.get("/", (req, res) => {
-    res.send("<h1>Full Cycle</h1>");
-});
-
-app.listen(port, () => {
-    console.log(`Rodando na porta ${port}`);
+table.then(result => {
+  console.log(result)
 })
 
+
+function sqlTable(connection) {
+  return new Promise((resolve, reject) => {
+    const sql = `create table if not exists people (
+      id int not null auto_increment,
+      name varchar(255) not null,
+      primary key (id)
+    )`
+    connection.query(sql, (err, result) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(result)
+      }
+    })
+  })
+}
+
+const insert = sqlInsert(connection)
+
+function sqlInsert(connection) {
+  return new Promise((resolve, reject) => {
+    const sql = `insert into people(name) values ?`
+    const peoples = [['Lael'], ['Joao'], ['Maria']]
+    connection.query(sql, [peoples], (err, result) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(result)
+        console.log(`Foram inseridas ${result.affectedRows} pessoas!`)
+      }
+    })
+  })
+}
+
+insert.then(result => {
+  console.log(result)
+})
+
+const select = sqlSelect(connection)
+
+function sqlSelect(connection) {
+  return new Promise((resolve, reject) => {
+    const sql = `select * from people`
+    connection.query(sql, (err, result) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(result)
+      }
+    })
+  })
+}
+
+const listPeople = async () => {
+  const allPeople = (await select)
+  console.log(allPeople)
+  return allPeople
+}
+
+app.get('/', async (req, res) => {
+  const peoples = await listPeople()
+  const listPeoples = '<ul>' + peoples.map(item => `<li align="center">${item.name}</li>`).join('') + '</ul>'
+  res.send(`<h1 align="center">Full Cycle Rocks!</h1>\n${listPeoples}`)
+})
+
+app.listen(port, () => {
+  console.log(`Ouvindo na porta: ${port}`)
+})

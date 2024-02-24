@@ -1,28 +1,16 @@
-# Use an official Node.js runtime as a parent image
-FROM node
+FROM node:16 AS builder
 
-
-# Instalação do telnet
-RUN apt-get update && \
-    apt-get install -y telnet
-
-# Set the working directory in the container
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+RUN apt-get update && apt-get install -y wget
 
-# Install app dependencies
-RUN npm install
+ENV DOCKERIZE_VERSION v0.6.1
+RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+    && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+    && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
-RUN apt-get install -y telnet
+COPY ./package*.json /usr/src/app/
 
-# Copy the rest of the application code to the working directory
-#COPY . .
+COPY . /usr/src/app
 
-# Expose the port the app runs on
-#EXPOSE 3000
-
-
-# Command to run your application
-# CMD ["npm", "start"]
+EXPOSE 3000
